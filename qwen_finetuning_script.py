@@ -39,11 +39,11 @@ trainer = SFTTrainer(
     args = SFTConfig(
         dataset_text_field = "text",
         dataset_num_proc=1,
-        per_device_train_batch_size = 4,
+        per_device_train_batch_size = 8,
         gradient_accumulation_steps = 4, # Use GA to mimic batch size!
         warmup_steps = 5,
-        # num_train_epochs = 3, # Set this for 1 full training run.
-        max_steps = 30,
+        num_train_epochs = 2, # Set this for 1 full training run.
+        # max_steps = 30,
         learning_rate = 2e-5, # Reduce to 2e-5 for long training runs
         logging_steps = 1,
         optim = "adamw_8bit",
@@ -88,11 +88,11 @@ create_repo(
 model.push_to_hub(repo_id, token = token) # Online saving
 tokenizer.push_to_hub(repo_id, token = token) # Online saving
 
-from unsloth import FastLanguageModel
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = repo_id, # YOUR MODEL YOU USED FOR TRAINING
-    max_seq_length = 2048,
-    load_in_4bit = True,
-)
+# from unsloth import FastLanguageModel
+# model, tokenizer = FastLanguageModel.from_pretrained(
+#     model_name = repo_id, # YOUR MODEL YOU USED FOR TRAINING
+#     max_seq_length = 2048,
+#     load_in_4bit = True,
+# )
 
-model.push_to_hub_gguf(repo_id, tokenizer, quantization_method = "q4_k_m", token = token)
+# model.push_to_hub_gguf(repo_id, tokenizer, quantization_method = "q4_k_m", token = token)
