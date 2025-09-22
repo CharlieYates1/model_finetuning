@@ -1,0 +1,6 @@
+.env
+data/*
+*.wav
+datasets/*
+unsloth_compiled_cache/*
+settings.json
