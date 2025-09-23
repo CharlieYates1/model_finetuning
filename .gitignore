@@ -4,3 +4,4 @@ data/*
 datasets/*
 unsloth_compiled_cache/*
 settings.json
+generated_conversations.jsonl
