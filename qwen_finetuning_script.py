@@ -3,7 +3,7 @@ from unsloth import FastLanguageModel
 import dotenv
 dotenv.load_dotenv()
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = "Bossologist/Qwen3-4B-Instruct-2507_general_ft_f16",
+    model_name = "unsloth/Qwen3-4B-Instruct-2507",
     max_seq_length = 16384,   # Context length - can be longer, but uses more memory
     load_in_4bit = True,     # 4bit uses much less memory
     load_in_8bit = False,    # A bit more accurate, uses 2x memory
@@ -54,12 +54,12 @@ trainer = SFTTrainer(
     ),
 )
 
-# from unsloth.chat_templates import train_on_responses_only
-# trainer = train_on_responses_only(
-#     trainer,
-#     instruction_part = "<|im_start|>user\n",
-#     response_part = "<|im_start|>assistant\n",
-# )
+from unsloth.chat_templates import train_on_responses_only
+trainer = train_on_responses_only(
+    trainer,
+    instruction_part = "<|im_start|>user\n",
+    response_part = "<|im_start|>assistant\n",
+)
 
 trainer.train()
 
