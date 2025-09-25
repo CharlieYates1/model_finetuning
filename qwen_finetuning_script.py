@@ -3,7 +3,7 @@ from unsloth import FastLanguageModel
 import dotenv
 dotenv.load_dotenv()
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name = "unsloth/Qwen3-4B-Instruct-2507",
+    model_name = "Bossologist/Qwen3-4B-Instruct-2507_general_ft_f16",
     max_seq_length = 2048,   # Context length - can be longer, but uses more memory
     load_in_4bit = True,     # 4bit uses much less memory
     load_in_8bit = False,    # A bit more accurate, uses 2x memory
@@ -27,7 +27,7 @@ model = FastLanguageModel.get_peft_model(
 )
 
 from datasets import load_dataset
-dataset = load_dataset("Bossologist/general_Qwen3_ft_dataset", split = "train")
+dataset = load_dataset("Bossologist/Qwen3_persona_ft", split = "train")
 dataset = dataset.shuffle(seed=42).select(range(100000))
 
 from trl import SFTTrainer, SFTConfig
@@ -42,7 +42,7 @@ trainer = SFTTrainer(
         per_device_train_batch_size = 32,
         gradient_accumulation_steps = 2, # Use GA to mimic batch size!
         warmup_steps = 5,
-        num_train_epochs = 1, # Set this for 1 full training run.
+        num_train_epochs = 2, # Set this for 1 full training run.
         # max_steps = 30,
         learning_rate = 2e-4, # Reduce to 2e-5 for long training runs
         logging_steps = 1,
@@ -52,6 +52,13 @@ trainer = SFTTrainer(
         seed = 3407,
         report_to = "none", # Use this for WandB etc
     ),
+)
+
+from unsloth.chat_templates import train_on_responses_only
+trainer = train_on_responses_only(
+    trainer,
+    instruction_part = "<|im_start|>user\n",
+    response_part = "<|im_start|>assistant\n",
 )
 
 trainer.train()
@@ -78,7 +85,7 @@ from huggingface_hub import create_repo
 import os
 
 token = os.getenv("HF_TOKEN")
-repo_id = "Bossologist/Qwen3-4B-Instruct-2507_general_ft_lora"
+repo_id = "Bossologist/Qwen3-4B-Instruct-2507_persona_lora"
 create_repo(
     repo_id,
     exist_ok=True,
