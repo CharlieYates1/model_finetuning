@@ -28,7 +28,7 @@ model = FastLanguageModel.get_peft_model(
 
 from datasets import load_dataset
 dataset = load_dataset("Bossologist/Qwen3_persona_ft", split = "train")
-dataset = dataset.shuffle(seed=42).select(range(100000))
+dataset = dataset.shuffle(seed=42)
 
 from trl import SFTTrainer, SFTConfig
 trainer = SFTTrainer(
