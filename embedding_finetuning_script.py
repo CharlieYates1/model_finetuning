@@ -8,6 +8,8 @@ import os
 import dotenv
 dotenv.load_dotenv()
 
+os.environ[“WANDB_DISABLED”] = “true”
+
 # Load base embedding model
 model = SentenceTransformer("dwzhu/e5-base-4k")
 
