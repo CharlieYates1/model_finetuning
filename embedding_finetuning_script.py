@@ -21,8 +21,8 @@ val_examples: list[InputExample] = []
 for example in dataset["validation"]:
     val_examples.append(InputExample(texts=[example["event_a"], example["event_b"]], label=example["label"]))
 
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=32)
-val_dataloader = DataLoader(val_examples, shuffle=False, batch_size=32)
+train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=4)
+val_dataloader = DataLoader(val_examples, shuffle=False, batch_size=4)
 train_loss = losses.CosineSimilarityLoss(model)
 
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
@@ -35,6 +35,8 @@ evaluator = EmbeddingSimilarityEvaluator(
     name='sts-validation' # A name for the evaluation results
 )
 
+# To use 16-bit (mixed precision) training, set 'use_amp=True' in model.fit().
+# Example:
 model.fit(
     train_objectives=[(train_dataloader, train_loss)],
     evaluator=evaluator,
@@ -42,6 +44,7 @@ model.fit(
     warmup_steps=100,
     evaluation_steps=500,
     output_path='./fine_tuned_model_with_val',
-    save_best_model=True # Now saves the model with the best validation score
+    save_best_model=True, # Now saves the model with the best validation score
+    use_amp=True # Enables 16-bit (mixed precision) training
 )
 model.push_to_hub("Bossologist/e5-base-4k-phase-a", token=os.environ["HF_KEY"])
