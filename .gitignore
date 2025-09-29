@@ -6,3 +6,9 @@ unsloth_compiled_cache/*
 settings.json
 generated_conversations.jsonl
 casual_conversations.jsonl
+embed_ft_data/*
+query_batches/*
+completed_batches/*
+*.ipynb
+persona_data_prep.ipynb
+qwen_finetune.ipynb
