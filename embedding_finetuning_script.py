@@ -34,7 +34,8 @@ evaluator = EmbeddingSimilarityEvaluator(
     scores=dataset['validation']['label'],
     name='sts-validation' # A name for the evaluation results
 )
-
+while True:
+    n = 1
 # To use 16-bit (mixed precision) training, set 'use_amp=True' in model.fit().
 # Example:
 model.fit(
