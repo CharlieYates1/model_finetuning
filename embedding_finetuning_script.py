@@ -4,6 +4,9 @@ import json
 
 from datasets import DatasetDict, load_dataset
 from torch.utils.data import DataLoader
+import os
+import dotenv
+dotenv.load_dotenv()
 
 # Load base embedding model
 model = SentenceTransformer("dwzhu/e5-base-4k")
@@ -41,3 +44,4 @@ model.fit(
     output_path='./fine_tuned_model_with_val',
     save_best_model=True # Now saves the model with the best validation score
 )
+model.push_to_hub("Bossologist/e5-base-4k-phase-a", token=os.environ["HF_KEY"])
