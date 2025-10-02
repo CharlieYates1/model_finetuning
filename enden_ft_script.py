@@ -208,7 +208,7 @@ def tokenize_batch(batch):
     return tok(cleaned_texts)
 dataset = dataset.map(tokenize_batch, batched=True, remove_columns=["text"])
 
-train_data = dataset["train"]
+train_data = dataset["train"][:3]
 train_loader = DataLoader(train_data, batch_size=1, shuffle=True, collate_fn=collator)
 
 with torch.no_grad():
