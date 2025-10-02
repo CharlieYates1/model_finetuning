@@ -150,12 +150,6 @@ qwen = AutoModelForCausalLM.from_pretrained(
 )
 emb_layer = qwen.get_input_embeddings()
 
-special_tokens_dict = {"additional_special_tokens": ["<null>"]}
-num_added = tok.add_special_tokens(special_tokens_dict)
-
-if num_added > 0:
-    qwen.resize_token_embeddings(len(tok))
-
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 # 2) Prepare for k-bit training (enables input grads, fixes LN cast, etc.)
@@ -195,6 +189,9 @@ import torch.nn.functional as F
 def get_loss(res_embeds, target):
     return F.mse_loss(res_embeds, target)
 
+def get_cce_loss(predicted, labels):
+    return F.cross_entropy(predicted, labels)
+
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 from transformers import DataCollatorWithPadding
@@ -209,11 +206,8 @@ def tokenize_batch(batch):
     return tok(cleaned_texts)
 dataset = dataset.map(tokenize_batch, batched=True, remove_columns=["text"])
 
-train_data = dataset["train"].shuffle(seed=42).select(range(5000))
+train_data = dataset["train"].shuffle(seed=42).select(range(200))
 train_loader = DataLoader(train_data, batch_size=1, shuffle=True, collate_fn=collator)
-
-with torch.no_grad():
-    null_embed = qwen.get_input_embeddings()(torch.tensor([tok.convert_tokens_to_ids("<null>")]).to(qwen.device))[0]
 
 def train_step(batch, latents, batch_proportion: float):
     """ 
@@ -222,7 +216,7 @@ def train_step(batch, latents, batch_proportion: float):
     """
 
     # Encode input with Perceiver
-    ids = batch["input_ids"].to(qwen.device)                  # [B, T]
+    ids = batch["input_ids"].to(qwen.device)                # [B, T]
     with torch.no_grad():
         tok_embeds = emb_layer(ids).detach() # [B, T, H]
 
@@ -236,38 +230,48 @@ def train_step(batch, latents, batch_proportion: float):
 
         silent = True
         curr_turn = "system"
+        total_mse_loss = 0
+        total_cce_loss = 0
+        total_loss = 0
         for t in range(ids.size(1) - 1):
             curr_token = tok_embeds[:, t:t+1, :]       # current token
 
             curr_id = ids[:, t]
-            if curr_id == tok.convert_tokens_to_ids("<|im_end|>"):
-                if curr_turn == "system":
-                    curr_turn = "user"
-                elif curr_turn == "user":
-                    curr_turn = "assistant"
-                    silent = False
-                else:
-                    curr_turn = "system"
-                    silent = True
+            # if curr_id == tok.convert_tokens_to_ids("<|im_end|>"):
+            #     if curr_turn == "system":
+            #         curr_turn = "user"
+            #     elif curr_turn == "user":
+            #         curr_turn = "assistant"
+            #         silent = False
+            #     else:
+            #         curr_turn = "system"
+            #         silent = True
 
             _, latents = perception_model({"inputs": encoder_layer(curr_token), "attention_mask": None}, latents)     # update state
 
-            target = tok_embeds[:, t+1] if not silent else null_embed.expand(tok_embeds.size(0), -1)  # next token embedding
+            target = tok_embeds[:, t+1] # if not silent else null_embed.expand(tok_embeds.size(0), -1)  # next token embedding
             latents_proj = conversion_layer(latents)
 
             # Forward with latents + token
             inputs_embeds = torch.cat([latents_proj, tok_embeds_masked[:, :t, :]], dim=1)
             outputs = qwen(inputs_embeds=inputs_embeds, output_hidden_states=True)
             res_embeds = outputs.hidden_states[-1][:, -1, :]  # [b, 2560]
-            loss = get_loss(res_embeds, target)
+            
+            mse_loss = get_loss(res_embeds, target)
+            cce_loss = get_cce_loss(outputs.logits[:, -1, :], ids[:, t+1])
+            total_mse_loss += mse_loss.item()
+            total_cce_loss += cce_loss.item()
+            
+            loss = mse_loss + cce_loss
+            total_loss += loss.item()
             loss.backward()
             latents = latents.detach()
     opt.step()
     opt.zero_grad(set_to_none=True)
     torch.nn.utils.clip_grad_norm_(params, 1.0)
-    print("Average loss: ", loss.item()/ids.size(1))
-
-    return float(loss.item())
+    print("Average loss: ", total_loss/ids.size(1))
+    print("Average mse loss: ", total_mse_loss/ids.size(1))
+    print("Average cce loss: ", total_cce_loss/ids.size(1))
 
 
 for batch_idx, batch in enumerate(train_loader):
