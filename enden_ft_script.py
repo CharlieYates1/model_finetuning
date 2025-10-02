@@ -273,6 +273,6 @@ for batch_idx, batch in enumerate(train_loader):
     train_step(batch, None, batch_idx / len(train_loader))
     print(f"Batch {batch_idx} completed out of {len(train_loader)}")
 
-qwen.push_to_hub("Bossologist/Qwen3-4B-Instruct-2507_enden_ft")
-tok.push_to_hub("Bossologist/Qwen3-4B-Instruct-2507_enden_ft")
-perception_model.push_to_hub("Bossologist/perception-model-test_enden_ft")
+qwen.push_to_hub("Bossologist/Qwen3-4B-Instruct-2507_enden_ft", token=os.getenv("HF_KEY"))
+tok.push_to_hub("Bossologist/Qwen3-4B-Instruct-2507_enden_ft", token=os.getenv("HF_KEY"))
+perception_model.push_to_hub("Bossologist/perception-model-test_enden_ft", token=os.getenv("HF_KEY"))
