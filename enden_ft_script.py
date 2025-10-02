@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import PerceiverModel, PerceiverConfig, PreTrainedModel, PretrainedConfig, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, AutoConfig
+import os
 
 class CrossAttentionLayer(nn.Module):
     """Proper cross-attention: queries from one source, keys/values from another"""
