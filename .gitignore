@@ -13,3 +13,6 @@ completed_batches/*
 persona_data_prep.ipynb
 qwen_finetune.ipynb
 test_perception_model/*
+archived/*
+testing.py
+*.pyc
